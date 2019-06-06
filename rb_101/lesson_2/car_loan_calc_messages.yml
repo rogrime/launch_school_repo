@@ -1,0 +1,7 @@
+welcome: "Welcome to Car Loan Calculator. Please enter your name:"
+loan_amount_m: "What is the loan amount?:"
+numbers_only: "Error please enter a number only!"
+apr_m: "What is the Annual Percentage Rate (APR) of the loan?"
+loan_duration_m: "What is the duration of the loan in years?:"
+another_calc?: "Want to do another calcuation? (Y to continue)"
+exit: "Thank you for using Car Loan Calculator!"
