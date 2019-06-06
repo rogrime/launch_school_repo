@@ -1,7 +1,0 @@
-welcome: "Welcome to Calculator 1.0 What is your name?:"
-name_empty: "Please enter a name:"
-u_first_num: "What is the first number?: "
-invalid_num: "Error number not valid!"
-u_second_num: "What is the second number?: "
-continue?: "Would you like to do another calculation? (Y to continue)"
-exit: "Thank you for using calculator 1.0"
