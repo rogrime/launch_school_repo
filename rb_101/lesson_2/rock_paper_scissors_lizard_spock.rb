@@ -17,7 +17,7 @@ end
 def results(player, cpu, win_logic)
   if plyr_win?(player, cpu, win_logic) == true
     'You won!'
-  elsif player == cpu
+  elsif (player == cpu)
     'You tied!'
   else # Computer won
     'Computer won!'
