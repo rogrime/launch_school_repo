@@ -3,11 +3,14 @@ score = { player: 0, cpu: 0 }
 WINNING_LINES = [[0, 1, 2], [3, 4, 5], [6, 7, 8],
                  [0, 3, 6], [1, 4, 7], [2, 5, 8],
                  [0, 4, 8], [2, 4, 6]]
-FIRST_PLAYER = 'player'
+FIRST_PLAYER = 'computer'
 INITIAL_MARKER = ' '
 PLAYER_MARKER = 'X'
 COMPUTER_MARKER = 'O'
 GAME_MSG = YAML.load_file("tic_tac_toe_messages.yml")
+SELECTION_TO_SQR = { 'T1' => 1, 'T2' => 2, 'T3' => 3,
+                     'M1' => 4, 'M2' => 5, 'M3' => 6,
+                     'B1' => 7, 'B2' => 8, 'B3' => 9 }
 
 board = {}
 def initialize_board(board)
@@ -30,20 +33,30 @@ def display_board(brd, score)
             Xs         Os
          [YOU: #{score[:player]}]   [CPU: #{score[:cpu]}]
 
+       [1]      [2]       [3]
             |          |
-        #{brd[1]}   |    #{brd[2]}     |   #{brd[3]}
+  (T)   #{brd[1]}   |    #{brd[2]}     |   #{brd[3]}
       ______|__________|______
             |          |
-        #{brd[4]}   |    #{brd[5]}     |   #{brd[6]}
+  (M)   #{brd[4]}   |    #{brd[5]}     |   #{brd[6]}
       ______|__________|______
             |          |
-        #{brd[7]}   |    #{brd[8]}     |   #{brd[9]}
+  (B)   #{brd[7]}   |    #{brd[8]}     |   #{brd[9]}
             |          |
+
   BRD
 end
 
 def prompt(msg)
   puts "==> #{msg}"
+end
+
+def join_by_or(array)
+  if array.size > 1
+    array[0..-2].join(', ') + ' or ' + array[-1]
+  else
+    array[-1]
+  end
 end
 
 def choose_first_player
@@ -78,6 +91,10 @@ def avaliable_squares(game_board)
   open_sqrs
 end
 
+def avaliable_player_choices(game_board)
+  avaliable_squares(game_board).map { |sqr| SELECTION_TO_SQR.key(sqr) }
+end
+
 def immediate_threat(game_board, marker)
   brd_values = game_board.values
 
@@ -94,62 +111,40 @@ def at_risk_sqr(game_board, line)
   sqr_at_risk
 end
 
-def request_row_from_usr(game_board, score)
-  display_board(game_board, score)
-  choice_to_num = { 'TOP' => 1, 'MIDDLE' => 2, 'BOTTOM' => 3 }
-  valid_choice = choice_to_num.keys
+def request_sqr_from_usr(game_board, score)
+  valid_choices = avaliable_player_choices(game_board)
 
   loop do
-    prompt(GAME_MSG['request_row'])
-    row_choice = gets.chomp.upcase
-    return choice_to_num[row_choice] if valid_choice.include?(row_choice)
-  end
-end
+    display_board(game_board, score)
 
-def request_sqr_from_usr
-  choice_to_num = { 'LEFT' => 0, 'MIDDLE' => 1, 'RIGHT' => 2 }
-  valid_choice = choice_to_num.keys
-
-  loop do
     prompt(GAME_MSG['request_square'])
+    prompt(join_by_or(valid_choices))
     sqr_choice = gets.chomp.upcase
-    return choice_to_num[sqr_choice] if valid_choice.include?(sqr_choice)
+
+    return SELECTION_TO_SQR[sqr_choice] if valid_choices.include?(sqr_choice)
+    prompt(GAME_MSG['invalid_choice'])
+    sleep 1
   end
 end
 
 def player_marks_square!(game_board, score)
-  selection_to_sqr = { 1 => [1, 2, 3], 2 => [4, 5, 6], 3 => [7, 8, 9] }
-  sqr_choice = ''
-
-  loop do
-    row = request_row_from_usr(game_board, score)
-    sqr = request_sqr_from_usr
-    sqr_choice = selection_to_sqr[row][sqr]
-
-    break if avaliable_squares(game_board).include?(sqr_choice)
-    prompt(GAME_MSG['unavaliable_choice'])
-    sleep 1
-  end
+  sqr_choice = request_sqr_from_usr(game_board, score)
   game_board[sqr_choice] = PLAYER_MARKER
 end
 
 def computer_marks_square!(game_board)
   sleep 2
-  immediate_threat_plyr = immediate_threat(game_board, PLAYER_MARKER)
+  plyr_is_threat = immediate_threat(game_board, PLAYER_MARKER)
   cpu_threat_to_plyr = immediate_threat(game_board, COMPUTER_MARKER)
 
-  # Defensive action
-  if immediate_threat_plyr
-    sqr_choice = at_risk_sqr(game_board, immediate_threat_plyr)
-  end
-  # Offensive action
   if cpu_threat_to_plyr
     sqr_choice = at_risk_sqr(game_board, cpu_threat_to_plyr)
+  elsif plyr_is_threat
+    sqr_choice = at_risk_sqr(game_board, plyr_is_threat) if plyr_is_threat
   end
-  # Pick square 5 if avaliable or pick random if not
+
   sqr_choice = 5 if avaliable_squares(game_board).include?(5)
   sqr_choice = avaliable_squares(game_board).sample if !sqr_choice
-
   game_board[sqr_choice] = COMPUTER_MARKER
 end
 
@@ -178,8 +173,7 @@ def tie?(game_board)
   avaliable_squares(game_board).empty?
 end
 
-def update_score!(game_board, score)
-  winner = determine_winner(game_board)
+def update_score!(winner, score)
   case winner
   when PLAYER_MARKER
     score[:player] += 1
@@ -188,8 +182,7 @@ def update_score!(game_board, score)
   end
 end
 
-def display_winning_msg(game_board)
-  winner = determine_winner(game_board)
+def display_winning_msg(winner)
   case winner
   when PLAYER_MARKER then puts GAME_MSG['player_won']
   when COMPUTER_MARKER then puts GAME_MSG['computer_won']
@@ -211,8 +204,9 @@ loop do # Main loop
     player = alternate_players(player)
     break if winner?(board) || tie?(board)
   end
-  update_score!(board, score)
-  display_winning_msg(board)
+  winner = determine_winner(board)
+  update_score!(winner, score)
+  display_winning_msg(winner)
 
   puts GAME_MSG['next_game_starting'] if score[:player] != 5 && score[:cpu] != 5
   sleep 3
