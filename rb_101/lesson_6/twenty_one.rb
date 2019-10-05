@@ -60,8 +60,8 @@ end
 
 def update_score!(score, round_winner)
   case round_winner
-    when 'user' then score[:user] += 1
-    when 'dealer' then score[:dealer] += 1
+  when 'user' then score[:user] += 1
+  when 'dealer' then score[:dealer] += 1
   end
 end
 
@@ -169,7 +169,7 @@ loop do # Main Loop
   display_round_score(total(user_hand), total(dealer_hand))
   display_winning_msg(round_winner)
 
-  break if score.values.any? { |score| score == 5 }
+  break if score.values.any? { |scores| scores == 5 }
   puts "Starting next round..."
   sleep 3
 end
