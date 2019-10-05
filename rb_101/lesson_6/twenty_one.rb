@@ -1,3 +1,5 @@
+score = { user: 0, dealer: 0 }
+GOAL = 21
 CARD_TO_VALUE = { 'J' => 10, 'Q' => 10, 'K' => 10, 'A' => 11 }
 CARDS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
 SUITS = ['H', 'S', 'D', 'C']
@@ -34,33 +36,36 @@ def total(hand)
   card_values = hand.map { |cards| cards[1] }
   card_values.map! { |card| integer?(card) ? card.to_i : CARD_TO_VALUE[card] }
 
-  until card_values.sum < 22 || !card_values.include?(11)
+  until card_values.sum <= GOAL || !card_values.include?(11)
     ace_index = card_values.index(11)
     card_values[ace_index] = 1
   end
   card_values.sum
 end
 
-def bust?(hand)
-  total(hand) > 21
-end
-
-def tie?(user_sum, dealer_sum)
-  user_sum == dealer_sum
+def bust?(total)
+  total > GOAL
 end
 
 def winner(user_hand, dealer_hand)
   dealer_sum = total(dealer_hand)
   user_sum = total(user_hand)
-  user_bust = bust?(user_hand)
-  dealer_bust = bust?(dealer_hand)
+  user_bust = bust?(user_sum)
+  dealer_bust = bust?(dealer_sum)
 
-  return 'tie' if tie?(user_sum, dealer_sum)
+  return 'tie' if user_sum == dealer_sum
   return 'user' if dealer_bust || dealer_sum < user_sum && !user_bust
   'dealer'
 end
 
-def hit_or_stay
+def update_score!(score, round_winner)
+  case round_winner
+    when 'user' then score[:user] += 1
+    when 'dealer' then score[:dealer] += 1
+  end
+end
+
+def hit_or_stay?
   valid_choices = ['HIT', 'STAY']
   choice = ''
 
@@ -85,7 +90,7 @@ def corners_of_cards(hand)
 end
 
 # rubocop:disable Metrics/AbcSize
-def display_cards(user_hand, dealer_hand)
+def display_cards(score, user_hand, dealer_hand)
   corners_of_cards_user = corners_of_cards(user_hand)
   corners_of_cards_dealer = corners_of_cards(dealer_hand)
   user_size = user_hand.size
@@ -93,6 +98,7 @@ def display_cards(user_hand, dealer_hand)
 
   system 'clear'
   puts <<-CARDS
+  |YOU: #{score[:user]}| |DEALER: #{score[:dealer]}|
 
   (DEALER):
   #{'+----+ ' * dealer_size}
@@ -114,12 +120,12 @@ def display_total(current_total)
   prompt("Total: #{current_total}")
 end
 
-def display_final_score(user_sum, dealer_sum)
+def display_round_score(user_sum, dealer_sum)
   prompt("Your Total: #{user_sum} | Dealers Total: #{dealer_sum}")
 end
 
-def display_winning_msg(user_hand, dealer_hand)
-  prompt(WINNING_MSG[winner(user_hand, dealer_hand)])
+def display_winning_msg(round_winner)
+  prompt(WINNING_MSG[round_winner])
 end
 
 def play_again?
@@ -144,20 +150,26 @@ loop do # Main Loop
   loop do
     dealer_total = total(dealer_hand)
     user_total = total(user_hand)
+    current_player_total = total(current_player_hand)
 
-    display_cards(user_hand, dealer_hand)
+    display_cards(score, user_hand, dealer_hand)
     display_total(user_total)
-    break if bust?(current_player_hand)
+    break if bust?(current_player_total)
 
-    user_choice = hit_or_stay unless current_player_hand == dealer_hand
+    user_choice = hit_or_stay? unless current_player_hand == dealer_hand
     current_player_hand = dealer_hand if user_choice == 'STAY'
 
-    break if dealer_total >= 17 && current_player_hand == dealer_hand
+    break if dealer_total >= (GOAL - 4) && current_player_hand == dealer_hand
     hit!(deck, current_player_hand)
   end
+  round_winner = winner(user_hand, dealer_hand)
+  update_score!(score, round_winner)
 
-  display_cards(user_hand, dealer_hand)
-  display_final_score(total(user_hand), total(dealer_hand))
-  display_winning_msg(user_hand, dealer_hand)
-  break unless play_again?
+  display_cards(score, user_hand, dealer_hand)
+  display_round_score(total(user_hand), total(dealer_hand))
+  display_winning_msg(round_winner)
+
+  break if score.values.any? { |score| score == 5 }
+  puts "Starting next round..."
+  sleep 3
 end
