@@ -1,5 +1,6 @@
 score = { user: 0, dealer: 0 }
 GOAL = 21
+DEALER_GOAL = GOAL - 4
 CARD_TO_VALUE = { 'J' => 10, 'Q' => 10, 'K' => 10, 'A' => 11 }
 CARDS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
 SUITS = ['H', 'S', 'D', 'C']
@@ -159,7 +160,7 @@ loop do # Main Loop
     user_choice = hit_or_stay? unless current_player_hand == dealer_hand
     current_player_hand = dealer_hand if user_choice == 'STAY'
 
-    break if dealer_total >= (GOAL - 4) && current_player_hand == dealer_hand
+    break if dealer_total >= DEALER_GOAL && current_player_hand == dealer_hand
     hit!(deck, current_player_hand)
   end
   round_winner = winner(user_hand, dealer_hand)
@@ -173,3 +174,4 @@ loop do # Main Loop
   puts "Starting next round..."
   sleep 3
 end
+puts "Thank you for playing! Goodbye!"
