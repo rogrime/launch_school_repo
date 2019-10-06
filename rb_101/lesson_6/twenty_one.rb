@@ -33,14 +33,22 @@ def hit!(deck, hand)
   deck.delete(drawn_card)
 end
 
+def no_more_changeable_aces?(card_values)
+  !card_values.include?(11)
+end
+
+def choose_value_of_aces!(card_values)
+  until card_values.sum <= GOAL || no_more_changeable_aces?(card_values)
+    ace_index = card_values.index(11)
+    card_values[ace_index] = 1
+  end
+end
+
 def total(hand)
   card_values = hand.map { |cards| cards[1] }
   card_values.map! { |card| integer?(card) ? card.to_i : CARD_TO_VALUE[card] }
 
-  until card_values.sum <= GOAL || !card_values.include?(11)
-    ace_index = card_values.index(11)
-    card_values[ace_index] = 1
-  end
+  choose_value_of_aces!(card_values)
   card_values.sum
 end
 
@@ -67,11 +75,11 @@ def update_score!(score, round_winner)
 end
 
 def hit_or_stay?
-  valid_choices = ['HIT', 'STAY']
+  valid_choices = ['H', 'S']
   choice = ''
 
   loop do
-    prompt('Would you like to \'hit\' or \'stay\' ?:')
+    prompt('Would you like to [h]it or [s]tay?:')
     choice = gets.chomp.upcase
     break if valid_choices.include?(choice)
   end
@@ -99,6 +107,7 @@ def display_cards(score, user_hand, dealer_hand)
 
   system 'clear'
   puts <<-CARDS
+     5 points to win
   |YOU: #{score[:user]}| |DEALER: #{score[:dealer]}|
 
   (DEALER):
@@ -122,24 +131,12 @@ def display_total(current_total)
 end
 
 def display_round_score(user_sum, dealer_sum)
-  prompt("Your Total: #{user_sum} | Dealers Total: #{dealer_sum}")
+  prompt("Your Total: #{user_sum}")
+  prompt("Dealers Total: #{dealer_sum}")
 end
 
 def display_winning_msg(round_winner)
   prompt(WINNING_MSG[round_winner])
-end
-
-def play_again?
-  choice = ''
-  choice_to_boolean = { 'Y' => true, 'N' => false }
-  valid_choices = choice_to_boolean.keys
-
-  loop do
-    prompt('Would you like to play again? (Y/N):')
-    choice = gets.chomp.upcase
-    break if valid_choices.include?(choice)
-  end
-  choice_to_boolean[choice]
 end
 
 loop do # Main Loop
@@ -158,7 +155,7 @@ loop do # Main Loop
     break if bust?(current_player_total)
 
     user_choice = hit_or_stay? unless current_player_hand == dealer_hand
-    current_player_hand = dealer_hand if user_choice == 'STAY'
+    current_player_hand = dealer_hand if user_choice == 'S'
 
     break if dealer_total >= DEALER_GOAL && current_player_hand == dealer_hand
     hit!(deck, current_player_hand)
@@ -171,7 +168,7 @@ loop do # Main Loop
   display_winning_msg(round_winner)
 
   break if score.values.any? { |scores| scores == 5 }
-  puts "Starting next round..."
-  sleep 3
+  puts 'Starting next round...'
+  sleep 5
 end
-puts "Thank you for playing! Goodbye!"
+puts 'Thank you for playing! Goodbye!'
